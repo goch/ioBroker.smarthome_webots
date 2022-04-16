@@ -1,0 +1,85 @@
+{
+	"common": {
+		"name": "maskor_webots",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"zh-cn": "首次出版"
+			}
+		},
+		"titleLang": {
+			"en": "MASKOR Webots",
+			"de": "MASKOR Webbots",
+			"ru": "МАСКОР Вебботы",
+			"pt": "Webbots MASKOR",
+			"nl": "MASKOR-webbots",
+			"fr": "Masquer Webots",
+			"it": "MASKOR Webbot",
+			"es": "MASKOR Webbots",
+			"pl": "MASKOR Weboty",
+			"zh-cn": "MASKOR 网络机器人"
+		},
+		"desc": {
+			"en": "connect to Webots SmartHome Simulation",
+			"de": "Verbinden Sie sich mit der SmartHome-Simulation von Webots",
+			"ru": "подключиться к Webots SmartHome Simulation",
+			"pt": "conecte-se ao Webots SmartHome Simulation",
+			"nl": "verbinding maken met Webots SmartHome Simulation",
+			"fr": "se connecter à Webots SmartHome Simulation",
+			"it": "connettersi a Webots SmartHome Simulation",
+			"es": "conéctese a Webots SmartHome Simulation",
+			"pl": "połącz się z Webots SmartHome Simulation",
+			"zh-cn": "连接到 Webots SmartHome Simulation"
+		},
+		"authors": [
+			"goch <christoph.gollok@alumni.fh-aachen.de>"
+		],
+		"keywords": [
+			"ioBroker",
+			"template",
+			"Smart Home",
+			"home automation"
+		],
+		"license": "Apache-2.0",
+		"platform": "Javascript/Node.js",
+		"main": "main.js",
+		"icon": "maskor_webots.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/goch/ioBroker.maskor_webots/master/admin/maskor_webots.png",
+		"readme": "https://github.com/goch/ioBroker.maskor_webots/blob/master/README.md",
+		"loglevel": "info",
+		"restartAdapters": [
+			"vis"
+		],
+		"localLinks": {
+			"_default": "%web_protocol%://%ip%:%web_port%/vis/edit.html"
+		},
+		"mode": "daemon",
+		"type": "iot-systems",
+		"compact": true,
+		"connectionType": "local",
+		"dataSource": "push",
+		"materialize": true,
+		"dependencies": [
+			{
+				"js-controller": ">=2.0.0"
+			},
+			"vis"
+		]
+	},
+	"native": {
+		"option1": true,
+		"option2": "42"
+	},
+	"objects": [],
+	"instanceObjects": []
+}
