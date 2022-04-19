@@ -7,11 +7,12 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require("@iobroker/adapter-core");
+const { randomInt } = require("crypto");
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
 const socketIO    = require('./lib/socket.io.min.js');
-const WebSocketClient = require('websocket').client;
+const WebSocketClient = require('websocket').w3cwebsocket;
 
 
 
@@ -30,64 +31,98 @@ class MaskorWebots extends utils.Adapter {
 		// this.on("objectChange", this.onObjectChange.bind(this));
 		// this.on("message", this.onMessage.bind(this));
 		this.on("unload", this.onUnload.bind(this));
+
+		//placeholder for socket connection
+		this.socket = null;
+		this.reconnectTimer = null;
+		this.devices = {};
 		
 	}
-	connect_webots(){
 
-		var client = new WebSocketClient();
+	connect_webots(url){
+		this.log.info("connect to Websocket Server");
+		//TODO: remove hardcoded uri
+		this.socket = new WebSocketClient(url);
 		var that = this;
+		this.socket.onerror = function() {
+			that.log.error('Connection Error');
+		};
 
-		client.on('connect', function(connection) {
+		this.socket.onopen = function() {
+			clearInterval(that.reconnectTimer);
 			that.log.info('WebSocket Client Connected');
-			
-			connection.on('error', function(error) {
-				that.log.error("Connection Error: " + error.toString());
-			});
-			
-			connection.on('close', function() {
-				that.log.info('echo-protocol Connection Closed');
-			});
-			
-			connection.on('message', function(message) {
-				if (message.type === 'utf8') {
-					that.log.info("Received: '" + message.utf8Data + "'");
-				}
-			});
-			
-			function sendNumber() {
-				if (connection.connected) {
-					var number = Math.round(Math.random() * 100);
-					connection.sendUTF(number.toString());
-					setTimeout(sendNumber, 1000);
+			that.sendWebots("Hello Webots");
+		};
+
+		this.socket.onclose = function() {
+			that.log.info('Client Closed');
+			that.log.warn('Socket is closed. Reconnect will be attempted in 3 seconds.');
+			that.reconnectTimer = setTimeout(function() {
+			that.connect_webots(url);
+			}, 3000);
+		};
+
+		this.socket.onmessage = function(e) {
+			that.log.info("Received: '" + e.data + "'");
+			try{
+				const msg = JSON.parse(e.data);
+				that.log.info(msg)
+				that.add_device(msg);
+			} catch (e) {
+				that.log.warn("not JSON");
+			}
+
+			if (typeof e.data === 'string') {				
+				if (e.data == "RESET-SH"){
+					that.reset();
 				}
 			}
-			sendNumber();
-		});
-		this.log.info("connect to Websocket Server");
-
-		client.connect('ws://192.168.10.100:3000/');
-		client.connection.sendUTF(999);
-
-
-		// this.log.info("connecting to Websocket Server")
-		// this.io = new socketIO('"ws://192.168.10.100:3000"');
-		
-		// this.io.on("connect", () => {
-		// 	this.log.info(this.io.disconnected); // false
-		// });
-
-		// this.io.on("disconnect", (reason) => {
-		// 	if (reason === "io server disconnect") {
-		// 	  // the disconnection was initiated by the server, you need to reconnect manually
-		// 	  this.io.connect();
-		// 	}
-		// 	// else the socket will automatically try to reconnect
-		// });
-
-		// this.io.on("connect_error", (error) => {
-		// 	this.log.error(error.name + ': ' + error.message); // false
-		// });
+		};	
 	}
+
+	sendWebots(msg){
+		if ( this.socket != null && this.socket.readyState === this.socket.OPEN) {
+			this.socket.send(JSON.stringify(msg));
+		}
+	}
+
+	async reset(){
+		this.log.info("Reseting Devices");
+		
+		for (const [name, data] of Object.entries(this.devices)) {
+			this.log.info(name)
+		await this.deleteDeviceAsync(name);
+		  }
+	}
+
+	async add_device(dict){
+		this.log.info("Add new Device:" + dict["name"])
+		var dev_name = dict["name"]
+		this.devices[dev_name] = dict["data"]
+		
+		this.log.info("Add Device Entry to tree:")
+		await this.createDeviceAsync(dev_name);
+
+		for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
+			this.log.info("Add State: " +state_name + " Data: " +data + " type: " +typeof(data))
+			await this.setObjectNotExistsAsync(dev_name +"."+ state_name, {
+				type: "state",
+				common: {
+					name: state_name,
+					type: typeof(data),
+					role: "state",
+					read: true,
+					write: true,
+				},
+				native: {},
+			});
+		}
+		this.subscribeStates(dev_name+".*");
+
+
+	}
+
+	
 
 	/**
 	 * Is called when databases are connected and adapter received configuration.
@@ -97,8 +132,8 @@ class MaskorWebots extends utils.Adapter {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.info("config option1: " + this.config.option1);
-		this.log.info("config option2: " + this.config.option2);
+		this.log.info("config webots_url: " + this.config.webots_url);
+
 
 		/*
 		For every state in the system there has to be also an object of type state
@@ -116,87 +151,14 @@ class MaskorWebots extends utils.Adapter {
 			},
 			native: {},
 		});
+		
+		
 
-		await this.setObjectNotExistsAsync("Devices", {
-			type: "folder",
-			common: {
-				name: "Devices",
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp", {
-			type: "device",
-			common:{
-				name: "RGBLamp"
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp.r", {
-			type: "state",
-			common: {
-				name: "r",
-				type: "number",
-				role: "state",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp.g", {
-			type: "state",
-			common: {
-				name: "g",
-				type: "number",
-				role: "state",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp.b", {
-			type: "state",
-			common: {
-				name: "b",
-				type: "number",
-				role: "state",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp.brightness", {
-			type: "state",
-			common: {
-				name: "brightness",
-				type: "number",
-				role: "state",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
-
-		await this.setObjectNotExistsAsync("Devices.RGBLamp.on", {
-			type: "state",
-			common: {
-				name: "on",
-				type: "boolean",
-				role: "indicator",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
+		
 		
 
 		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
 		this.subscribeStates("testVariable");
-		this.subscribeStates("RGBLamp.*");
 		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
 		// this.subscribeStates("lights.*");
 		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
@@ -224,7 +186,7 @@ class MaskorWebots extends utils.Adapter {
 		this.log.info("check group user admin group admin: " + result);
 
 
-		this.connect_webots();
+		this.connect_webots(this.config.webots_url);
 	}
 
 	/**
@@ -252,15 +214,15 @@ class MaskorWebots extends utils.Adapter {
 	//  * @param {string} id
 	//  * @param {ioBroker.Object | null | undefined} obj
 	//  */
-	// onObjectChange(id, obj) {
-	// 	if (obj) {
-	// 		// The object was changed
-	// 		this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-	// 	} else {
-	// 		// The object was deleted
-	// 		this.log.info(`object ${id} deleted`);
-	// 	}
-	// }
+	onObjectChange(id, obj) {
+		if (obj) {
+			// The object was changed
+			this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
+		} else {
+			// The object was deleted
+			this.log.info(`object ${id} deleted`);
+		}
+	}
 
 	/**
 	 * Is called if a subscribed state changes
@@ -271,6 +233,15 @@ class MaskorWebots extends utils.Adapter {
 		if (state) {
 			// The state was changed
 			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
+			
+			var devname = id.split('.');
+			var msg = {
+				name: devname[devname.length-2],
+				property: devname[devname.length-1],
+				value: state.val
+			};
+			
+			this.sendWebots(msg);
 		} else {
 			// The state was deleted
 			this.log.info(`state ${id} deleted`);

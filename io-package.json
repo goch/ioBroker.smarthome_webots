@@ -1,7 +1,7 @@
 {
 	"common": {
 		"name": "maskor_webots",
-		"version": "0.0.1",
+		"version": "0.0.2",
 		"news": {
 			"0.0.1": {
 				"en": "initial release",
@@ -78,7 +78,7 @@
 	},
 	"native": {
 		"option1": true,
-		"option2": "42"
+		"webots_url": "ws://192.168.10.100:3000"
 	},
 	"objects": [],
 	"instanceObjects": []
