@@ -78,7 +78,7 @@
 	},
 	"native": {
 		"option1": true,
-		"webots_url": "ws://192.168.10.100:3000"
+		"webots_url": "3000"
 	},
 	"objects": [],
 	"instanceObjects": []

@@ -11,9 +11,8 @@ const { randomInt } = require("crypto");
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
-const socketIO    = require('./lib/socket.io.min.js');
-const WebSocketClient = require('websocket').w3cwebsocket;
-
+const WebSocketServer = require('ws');
+//const wsServer = require('ws').WebserverServer;
 
 
 class MaskorWebots extends utils.Adapter {
@@ -32,58 +31,94 @@ class MaskorWebots extends utils.Adapter {
 		// this.on("message", this.onMessage.bind(this));
 		this.on("unload", this.onUnload.bind(this));
 
-		//placeholder for socket connection
-		this.socket = null;
+		//placeholder for server connection
+		this.server = null;
 		this.reconnectTimer = null;
+		this.pingInterval = null;
 		this.devices = {};
+		this.clients = {};
+		this.lock = false;
 		
 	}
 
-	connect_webots(url){
-		this.log.info("connect to Websocket Server");
-		//TODO: remove hardcoded uri
-		this.socket = new WebSocketClient(url);
-		var that = this;
-		this.socket.onerror = function() {
-			that.log.error('Connection Error');
-		};
-
-		this.socket.onopen = function() {
-			clearInterval(that.reconnectTimer);
-			that.log.info('WebSocket Client Connected');
-			that.sendWebots("Hello Webots");
-		};
-
-		this.socket.onclose = function() {
-			that.log.info('Client Closed');
-			that.log.warn('Socket is closed. Reconnect will be attempted in 3 seconds.');
-			that.reconnectTimer = setTimeout(function() {
-			that.connect_webots(url);
-			}, 3000);
-		};
-
-		this.socket.onmessage = function(e) {
-			that.log.info("Received: '" + e.data + "'");
-			try{
-				const msg = JSON.parse(e.data);
-				that.log.info(msg)
-				that.add_device(msg);
-			} catch (e) {
-				that.log.warn("not JSON");
-			}
-
-			if (typeof e.data === 'string') {				
-				if (e.data == "RESET-SH"){
-					that.reset();
-				}
-			}
-		};	
+	heartbeat() {
+		this.isAlive = true;
 	}
 
-	sendWebots(msg){
-		if ( this.socket != null && this.socket.readyState === this.socket.OPEN) {
-			this.socket.send(JSON.stringify(msg));
-		}
+	connect_webots(port){
+		this.log.info("Starting webserver server on port: " + port);
+
+		
+		var that = this;
+		that.server = new WebSocketServer.Server({ port: port })
+
+		that.server.on('connection', function connection(ws) {
+			clearInterval(that.reconnectTimer);
+			that.log.info('Webserver Client Connected');
+			
+			
+
+			ws.isAlive = true;
+			ws.on('pong', that.heartbeat);
+			ws.on('message', function message(data) {
+				that.log.info("Received: '" + data + "'");
+				
+				try{
+					const msg = JSON.parse(data);
+					
+					// that.log.info(msg)
+					// that.log.info(msg.name)
+					// that.log.info(msg.data)
+					// that.log.info("--")
+					// that.log.info(typeof(msg))
+					
+					// that.log.info(msg['name'])
+					// that.log.info(msg['data'])
+					that.add_client(msg['name'],ws);
+					that.update_device(msg);
+					//that.sendWebots(msg['name'],"Hello Webots");
+				} catch (e) {
+					that.log.warn("not JSON");
+				}
+
+				if (typeof data === 'string') {				
+					if (data == "RESET-SH"){
+						that.reset();
+					}
+				}
+				});
+		  });
+		  
+		  const interval = setInterval(function ping() {
+			that.server.clients.forEach(function each(ws) {
+			  if (ws.isAlive === false) return ws.terminate();
+		  
+			  ws.isAlive = false;
+			  ws.ping();
+			});
+		  }, 30000);
+		  
+		  that.server.on('close', function close() {
+			clearInterval(interval);
+			that.log.info('Client Closed');
+			that.log.warn('server is closed. Reconnect will be attempted in 3 seconds.');
+			that.reconnectTimer = setTimeout(function() {
+			that.connect_webots(port);
+			}, 3000);
+		  });
+
+
+
+	}
+
+	sendWebots(name,msg){
+		this.log.info("Sending Message to Client [" + name + "]: " + msg);
+		var client = this.clients[name];
+		if (client != null){
+			if ( this.server != null && client.isAlive) {
+				client.send(JSON.stringify(msg));
+			}
+		}else this.log.warn("Client " + name + " is not connected" )
 	}
 
 	async reset(){
@@ -95,31 +130,51 @@ class MaskorWebots extends utils.Adapter {
 		  }
 	}
 
-	async add_device(dict){
-		this.log.info("Add new Device:" + dict["name"])
-		var dev_name = dict["name"]
-		this.devices[dev_name] = dict["data"]
-		
-		this.log.info("Add Device Entry to tree:")
-		await this.createDeviceAsync(dev_name);
+	async update_device(dict){
+		this.log.info("Update Device:" + dict["name"]);
+		var dev_name = dict["name"];
 
-		for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
-			this.log.info("Add State: " +state_name + " Data: " +data + " type: " +typeof(data))
-			await this.setObjectNotExistsAsync(dev_name +"."+ state_name, {
-				type: "state",
-				common: {
-					name: state_name,
-					type: typeof(data),
-					role: "state",
-					read: true,
-					write: true,
-				},
-				native: {},
-			});
+		// this.log.info("LOCK DEVICE:" + dict["name"]);
+		// await this.unsubscribeStatesAsync(dev_name+".*");
+		// this.lock = true;
+		//check if device has to be created exists
+		if(!(dev_name in this.devices)){
+			// create new Device entry
+			this.log.info("Add Device: " + dev_name);
+			this.devices[dev_name] = dict["data"];
+			await this.createDeviceAsync(dev_name);
+
+			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
+				this.log.info("Add State: " +state_name + " Data: " +data + " type: " +typeof(data))
+				await this.setObjectAsync(dev_name +"."+ state_name, {
+					type: "state",
+					common: {
+						name: state_name,
+						type: typeof(data),
+						role: "state",
+						read: true,
+						write: true,
+					},
+					native: {},
+				});
+			}
+			this.subscribeStates(dev_name+".*");
+		}else{
+			// update states
+			this.devices[dev_name] = dict["data"];
+			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
+				await this.setStateAsync(dev_name +"."+ state_name, data ,true);
+			}
 		}
-		this.subscribeStates(dev_name+".*");
 
+		
+		// await this.subscribeStatesAsync(dev_name+".*");
+		// this.lock = false	
+		// this.log.info("UNLOCK DEVICE:" + dict["name"]);
+	}
 
+	add_client(name,ws){
+		this.clients[name] = ws
 	}
 
 	
@@ -140,17 +195,18 @@ class MaskorWebots extends utils.Adapter {
 		Here a simple template for a boolean variable named "testVariable"
 		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
 		*/
-		await this.setObjectNotExistsAsync("testVariable", {
-			type: "state",
-			common: {
-				name: "testVariable",
-				type: "boolean",
-				role: "indicator",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
+		
+		// await this.setObjectNotExistsAsync("testVariable", {
+		// 	type: "state",
+		// 	common: {
+		// 		name: "testVariable",
+		// 		type: "boolean",
+		// 		role: "indicator",
+		// 		read: true,
+		// 		write: true,
+		// 	},
+		// 	native: {},
+		// });
 		
 		
 
@@ -158,7 +214,7 @@ class MaskorWebots extends utils.Adapter {
 		
 
 		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-		this.subscribeStates("testVariable");
+		// this.subscribeStates("testVariable");
 		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
 		// this.subscribeStates("lights.*");
 		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
@@ -169,24 +225,27 @@ class MaskorWebots extends utils.Adapter {
 			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
 		*/
 		// the variable testVariable is set to true as command (ack=false)
-		await this.setStateAsync("testVariable", true);
+		// await this.setStateAsync("testVariable", true);
 
 		// same thing, but the value is flagged "ack"
 		// ack should be always set to true if the value is received from or acknowledged from the target system
-		await this.setStateAsync("testVariable", { val: true, ack: true });
+		// await this.setStateAsync("testVariable", { val: true, ack: true });
 
-		// same thing, but the state is deleted after 30s (getState will return null afterwards)
-		await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
+		// // same thing, but the state is deleted after 30s (getState will return null afterwards)
+		// await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
 
 		// examples for the checkPassword/checkGroup functions
-		let result = await this.checkPasswordAsync("admin", "iobroker");
-		this.log.info("check user admin pw iobroker: " + result);
+		// let result = await this.checkPasswordAsync("admin", "iobroker");
+		// this.log.info("check user admin pw iobroker: " + result);
 
-		result = await this.checkGroupAsync("admin", "admin");
-		this.log.info("check group user admin group admin: " + result);
+		// result = await this.checkGroupAsync("admin", "admin");
+		// this.log.info("check group user admin group admin: " + result);
 
 
 		this.connect_webots(this.config.webots_url);
+		this.log.info("Devices: "  + this.devices.length);
+		this.log.info("Connections: "  + this.clients.length);
+		this.log.info("Lock: " + this.lock);
 	}
 
 	/**
@@ -232,8 +291,12 @@ class MaskorWebots extends utils.Adapter {
 	onStateChange(id, state) {
 		if (state) {
 			// The state was changed
+			//if (!this.lock){
 			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			
+			
+			if (!state.ack){
+				// send only if state is updated from iobrokers side
 			var devname = id.split('.');
 			var msg = {
 				name: devname[devname.length-2],
@@ -241,7 +304,10 @@ class MaskorWebots extends utils.Adapter {
 				value: state.val
 			};
 			
-			this.sendWebots(msg);
+			
+			this.sendWebots(msg.name,msg);
+			}
+		//}
 		} else {
 			// The state was deleted
 			this.log.info(`state ${id} deleted`);
