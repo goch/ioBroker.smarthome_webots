@@ -56,27 +56,29 @@ class MaskorWebots extends utils.Adapter {
 			clearInterval(that.reconnectTimer);
 			that.log.info('Webserver Client Connected');
 			
-			
-
 			ws.isAlive = true;
 			ws.on('pong', that.heartbeat);
 			ws.on('message', function message(data) {
-				that.log.info("Received: '" + data + "'");
+				//that.log.info("Received: '" + data + "'");
 				
 				try{
 					const msg = JSON.parse(data);
 					
-					// that.log.info(msg)
-					// that.log.info(msg.name)
-					// that.log.info(msg.data)
-					// that.log.info("--")
-					// that.log.info(typeof(msg))
-					
-					// that.log.info(msg['name'])
-					// that.log.info(msg['data'])
-					that.add_client(msg['name'],ws);
-					that.update_device(msg);
-					//that.sendWebots(msg['name'],"Hello Webots");
+					switch (msg['type']) {
+						case 'object':
+							that.add_client(msg['name'],ws);
+							that.addDevice(msg);
+							break;
+						case 'state':
+							that.updateState(msg['name'], msg['data']['name'],msg['data']['value'] )
+							break;
+						case 'reset':
+							that.deleteSHDevice(msg['name']);
+							break;					
+						default:
+							break;
+					}
+
 				} catch (e) {
 					that.log.warn("not JSON");
 				}
@@ -106,13 +108,10 @@ class MaskorWebots extends utils.Adapter {
 			that.connect_webots(port);
 			}, 3000);
 		  });
-
-
-
 	}
 
 	sendWebots(name,msg){
-		this.log.info("Sending Message to Client [" + name + "]: " + msg);
+		//this.log.info("Sending Message to Client [" + name + "]: " + msg);
 		var client = this.clients[name];
 		if (client != null){
 			if ( this.server != null && client.isAlive) {
@@ -130,13 +129,17 @@ class MaskorWebots extends utils.Adapter {
 		  }
 	}
 
-	async update_device(dict){
-		this.log.info("Update Device:" + dict["name"]);
+	async deleteSHDevice(name){
+		await this.deleteDeviceAsync(name);
+		if (this.devices.hasOwnProperty(name)){
+			delete this.devices[name]
+		}
+
+	}
+
+	async addDevice(dict){
 		var dev_name = dict["name"];
 
-		// this.log.info("LOCK DEVICE:" + dict["name"]);
-		// await this.unsubscribeStatesAsync(dev_name+".*");
-		// this.lock = true;
 		//check if device has to be created exists
 		if(!(dev_name in this.devices)){
 			// create new Device entry
@@ -145,38 +148,30 @@ class MaskorWebots extends utils.Adapter {
 			await this.createDeviceAsync(dev_name);
 
 			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
-				this.log.info("Add State: " +state_name + " Data: " +data + " type: " +typeof(data))
+				this.log.info("Add State: " +state_name + " Data: " +data['value'] + " type: " +typeof(data['value']))
 				await this.setObjectAsync(dev_name +"."+ state_name, {
 					type: "state",
 					common: {
 						name: state_name,
-						type: typeof(data),
+						type: typeof(data['value']),
 						role: "state",
-						read: true,
-						write: true,
+						read: data['read'],
+						write: data['write'],
 					},
 					native: {},
 				});
 			}
 			this.subscribeStates(dev_name+".*");
-		}else{
-			// update states
-			this.devices[dev_name] = dict["data"];
-			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
-				await this.setStateAsync(dev_name +"."+ state_name, data ,true);
-			}
-		}
-
-		
-		// await this.subscribeStatesAsync(dev_name+".*");
-		// this.lock = false	
-		// this.log.info("UNLOCK DEVICE:" + dict["name"]);
+		}	
 	}
 
 	add_client(name,ws){
-		this.clients[name] = ws
+		this.clients[name] = ws;
 	}
 
+	async updateState(device, name, value){
+		this.setStateAsync(device +"."+ name, value, true);
+	}
 	
 
 	/**
@@ -243,9 +238,9 @@ class MaskorWebots extends utils.Adapter {
 
 
 		this.connect_webots(this.config.webots_url);
-		this.log.info("Devices: "  + this.devices.length);
-		this.log.info("Connections: "  + this.clients.length);
-		this.log.info("Lock: " + this.lock);
+		// this.log.info("Devices: "  + this.devices.length);
+		// this.log.info("Connections: "  + this.clients.length);
+		// this.log.info("Lock: " + this.lock);
 	}
 
 	/**
@@ -276,10 +271,10 @@ class MaskorWebots extends utils.Adapter {
 	onObjectChange(id, obj) {
 		if (obj) {
 			// The object was changed
-			this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
+			//this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
 		} else {
 			// The object was deleted
-			this.log.info(`object ${id} deleted`);
+			//this.log.info(`object ${id} deleted`);
 		}
 	}
 
@@ -291,9 +286,7 @@ class MaskorWebots extends utils.Adapter {
 	onStateChange(id, state) {
 		if (state) {
 			// The state was changed
-			//if (!this.lock){
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-			
+			//this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
 			
 			if (!state.ack){
 				// send only if state is updated from iobrokers side
