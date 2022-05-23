@@ -80,7 +80,7 @@ class MaskorWebots extends utils.Adapter {
 					}
 
 				} catch (e) {
-					that.log.warn("not JSON");
+					that.log.warn("not JSON: " + e.stack + " -> " + data );
 				}
 
 				if (typeof data === 'string') {				
@@ -149,15 +149,29 @@ class MaskorWebots extends utils.Adapter {
 
 			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
 				this.log.info("Add State: " +state_name + " Data: " +data['value'] + " type: " +typeof(data['value']))
+				
+
+				let state = {};
+				state.role = "state";
+				state.name = state_name;
+				state.desc = data['description'];
+				state.def = data['value'];
+				state.type = typeof(data['value']);
+				state.read = data['read'];
+				state.write = data['write'];
+				
+				if (data['min'] != null)
+					state.min = data['min'];  
+				if (data['max'] != null)
+					state.max = data['max'];  
+				
+				state.unit = data["unit"];
+				
+				
+				
 				await this.setObjectAsync(dev_name +"."+ state_name, {
 					type: "state",
-					common: {
-						name: state_name,
-						type: typeof(data['value']),
-						role: "state",
-						read: data['read'],
-						write: data['write'],
-					},
+					common: state,
 					native: {},
 				});
 			}
