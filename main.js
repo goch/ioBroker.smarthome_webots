@@ -145,9 +145,15 @@ class MaskorWebots extends utils.Adapter {
 			// create new Device entry
 			this.log.info("Add Device: " + dev_name);
 			this.devices[dev_name] = dict["data"];
+			await this.deleteDeviceAsync(dev_name)
 			await this.createDeviceAsync(dev_name);
 
 			for (const [state_name, data] of Object.entries(this.devices[dev_name])) {
+				if (data['remap'] != null){
+					this.log.warn("Skip State: " + state_name + " remapped -> " + data['remap']);
+					continue;
+				}
+					
 				this.log.info("Add State: " +state_name + " Data: " +data['value'] + " type: " +typeof(data['value']))
 				
 
