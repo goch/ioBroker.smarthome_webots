@@ -1,7 +1,7 @@
 {
 	"common": {
-		"name": "maskor_webots",
-		"version": "0.0.2",
+		"name": "smarthome_webots",
+		"version": "0.0.1",
 		"news": {
 			"0.0.1": {
 				"en": "initial release",
@@ -17,54 +17,46 @@
 			}
 		},
 		"titleLang": {
-			"en": "MASKOR Webots",
-			"de": "MASKOR Webbots",
-			"ru": "МАСКОР Вебботы",
-			"pt": "Webbots MASKOR",
-			"nl": "MASKOR-webbots",
-			"fr": "Masquer Webots",
-			"it": "MASKOR Webbot",
-			"es": "MASKOR Webbots",
-			"pl": "MASKOR Weboty",
-			"zh-cn": "MASKOR 网络机器人"
+			"en": "Smarthome Webots",
+			"de": "Smarthome-Webbots",
+			"ru": "Веб-боты для умного дома",
+			"pt": "Smarthome Webbots",
+			"nl": "Smarthome-webbots",
+			"fr": "Webots Smarthome",
+			"it": "Webbot per la casa intelligente",
+			"es": "Webbots para hogares inteligentes",
+			"pl": "Webboty Smarthome",
+			"zh-cn": "智能家居网络机器人"
 		},
 		"desc": {
-			"en": "connect to Webots SmartHome Simulation",
-			"de": "Verbinden Sie sich mit der SmartHome-Simulation von Webots",
-			"ru": "подключиться к Webots SmartHome Simulation",
-			"pt": "conecte-se ao Webots SmartHome Simulation",
-			"nl": "verbinding maken met Webots SmartHome Simulation",
-			"fr": "se connecter à Webots SmartHome Simulation",
-			"it": "connettersi a Webots SmartHome Simulation",
-			"es": "conéctese a Webots SmartHome Simulation",
-			"pl": "połącz się z Webots SmartHome Simulation",
-			"zh-cn": "连接到 Webots SmartHome Simulation"
+			"en": "An adapter to communicate with the Smarthome Webots Simulation",
+			"de": "Ein Adapter zur Kommunikation mit der Smarthome Webots Simulation",
+			"ru": "Адаптер для связи с Smarthome Webots Simulation.",
+			"pt": "Um adaptador para se comunicar com a Simulação Smarthome Webots",
+			"nl": "Een adapter om te communiceren met de Smarthome Webots Simulation",
+			"fr": "Un adaptateur pour communiquer avec la Smarthome Webots Simulation",
+			"it": "Un adattatore per comunicare con Smarthome Webots Simulation",
+			"es": "Un adaptador para comunicarse con Smarthome Webots Simulation",
+			"pl": "Adapter do komunikacji z symulacją Smarthome Webots",
+			"zh-cn": "与 Smarthome Webots Simulation 通信的适配器"
 		},
 		"authors": [
-			"goch <christoph.gollok@alumni.fh-aachen.de>"
+			"goch <gollok@fh-aachen.de>"
 		],
 		"keywords": [
-			"ioBroker",
-			"template",
-			"Smart Home",
-			"home automation"
+			"Smarthome",
+			"Simulation"
 		],
-		"license": "Apache-2.0",
+		"license": "MIT",
 		"platform": "Javascript/Node.js",
 		"main": "main.js",
-		"icon": "maskor_webots.png",
+		"icon": "smarthome_webots.png",
 		"enabled": true,
-		"extIcon": "https://raw.githubusercontent.com/goch/ioBroker.maskor_webots/master/admin/maskor_webots.png",
-		"readme": "https://github.com/goch/ioBroker.maskor_webots/blob/master/README.md",
+		"extIcon": "https://raw.githubusercontent.com/goch/ioBroker.smarthome_webots/master/admin/smarthome_webots.png",
+		"readme": "https://github.com/goch/ioBroker.smarthome_webots/blob/master/README.md",
 		"loglevel": "info",
-		"restartAdapters": [
-			"vis"
-		],
-		"localLinks": {
-			"_default": "%web_protocol%://%ip%:%web_port%/vis/edit.html"
-		},
 		"mode": "daemon",
-		"type": "iot-systems",
+		"type": "communication",
 		"compact": true,
 		"connectionType": "local",
 		"dataSource": "push",
@@ -72,13 +64,14 @@
 		"dependencies": [
 			{
 				"js-controller": ">=2.0.0"
-			},
-			"vis"
+			}
 		]
 	},
 	"native": {
-		"option1": true,
-		"webots_url": "3000"
+		"cleanup_devices": true,
+		"option2": "42",
+		"webots_url": "http://localhost",
+		"webots_port": 3000
 	},
 	"objects": [],
 	"instanceObjects": []

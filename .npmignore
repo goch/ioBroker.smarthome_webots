@@ -10,9 +10,6 @@ test/
 travis/
 appveyor.yaml
 
-# React sources for the Admin UI
-admin/src/
-
 # Type checking configuration
 tsconfig.json
 tsconfig.*.json
@@ -20,6 +17,9 @@ tsconfig.*.json
 # npm package files
 iobroker.*.tgz
 package-lock.json
+
+# i18n intermediate files
+admin/i18n
 
 # maintenance scripts
 maintenance/**

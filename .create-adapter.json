@@ -1,21 +1,24 @@
 {
 	"cli": true,
-	"adapterName": "maskor_webots",
-	"title": "MASKOR Webots",
-	"description": "connect to Webots SmartHome Simulation",
+	"adapterName": "smarthome_webots",
+	"title": "Smarthome Webots",
+	"description": "An adapter to communicate with the Smarthome Webots Simulation",
+	"keywords": [
+		"Smarthome",
+		"Simulation"
+	],
 	"expert": "no",
 	"features": [
-		"adapter",
-		"vis"
+		"adapter"
 	],
 	"adminFeatures": [],
-	"type": "iot-systems",
+	"type": "communication",
 	"startMode": "daemon",
 	"connectionType": "local",
 	"dataSource": "push",
 	"connectionIndicator": "no",
 	"language": "JavaScript",
-	"adminReact": "yes",
+	"adminReact": "no",
 	"tools": [
 		"ESLint",
 		"type checking"
@@ -27,10 +30,10 @@
 	"es6class": "yes",
 	"authorName": "goch",
 	"authorGithub": "goch",
-	"authorEmail": "christoph.gollok@alumni.fh-aachen.de",
+	"authorEmail": "gollok@fh-aachen.de",
 	"gitRemoteProtocol": "HTTPS",
 	"gitCommit": "no",
-	"license": "Apache License 2.0",
+	"license": "MIT License",
 	"ci": "gh-actions",
 	"dependabot": "no",
 	"creatorVersion": "1.34.1"

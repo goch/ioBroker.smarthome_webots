@@ -6,6 +6,6 @@ npm pack
 
 
 cd /opt/iobroker
-sudo npm i /home/goch/bachelor_ws/ioBroker.maskor_webots/iobroker.maskor_webots-0.0.2.tgz
+sudo npm i /home/goch/bachelor_ws/ioBroker.smarthome_webots/iobroker.smarthome_webots-0.0.1.tgz
 iobroker upload smarthome_webots
 
