@@ -30,6 +30,7 @@ class MaskorWebots extends utils.Adapter {
 		// this.on("objectChange", this.onObjectChange.bind(this));
 		// this.on("message", this.onMessage.bind(this));
 		this.on("unload", this.onUnload.bind(this));
+		
 
 		//placeholder for server connection
 		this.server = null;
@@ -137,6 +138,26 @@ class MaskorWebots extends utils.Adapter {
 
 	}
 
+	async deleteAllDevices(){
+		var that = this;
+		this.getDevices(function (err, devices) {
+			that.log.info("Devices found: " + devices.length)
+			for(var d = 0; d < devices.length; d++) {
+				var device = devices[d];
+				that.log.info("remove device "+ device._id);  
+				
+				 that.getStatesOf(device._id,function(error,states){
+				 	that.log.info("StatesFound: " + states.length)
+				 	for(var s = 0; s < states.length; s++) {
+						that.log.info("remove device "+ states[s]._id);
+						that.deleteState(states[s]._id);
+				 	}
+				 })
+				
+			}
+		});
+	}
+
 	async addDevice(dict){
 		var dev_name = dict["name"];
 
@@ -203,8 +224,6 @@ class MaskorWebots extends utils.Adapter {
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
 		this.log.info("config webots_url: " + this.config.webots_url);
-
-
 		/*
 		For every state in the system there has to be also an object of type state
 		Here a simple template for a boolean variable named "testVariable"
@@ -274,7 +293,10 @@ class MaskorWebots extends utils.Adapter {
 			// clearTimeout(timeout2);
 			// ...
 			// clearInterval(interval1);
-
+			this.log.info("Unloading Adapter");
+			this.log.info("CLEANUP SH DEVICES")
+			this.deleteAllDevices();
+			
 			callback();
 		} catch (e) {
 			callback();
