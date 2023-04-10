@@ -1,6 +1,6 @@
 {
   "name": "iobroker.smarthome_webots",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.0",
   "description": "An adapter to communicate with the Smarthome Webots Simulation",
   "author": {
     "name": "goch",
@@ -19,7 +19,6 @@
   "dependencies": {
     "@iobroker/adapter-core": "^2.6.8",
     "ws": "^8.5.0"
-
   },
   "devDependencies": {
     "@alcalzone/release-script": "^3.5.9",
