@@ -45,9 +45,11 @@ class SmarthomeWebots extends utils.Adapter {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.info("Configuration:\nCleanup devices on restart: " +this.config.cleanup_devices +"\nWebsocket Port: " + this.config.webots_port);
-		//this.log.info("config webots_url: " + this.config.webots_url);
-		
+		this.log.info("Cleanup devices on start: " +this.config.cleanup_devices);
+		this.log.info("config webots_url: " + this.config.webots_port);
+		if (this.config.cleanup_devices){
+			this.deleteAllDevices();
+		}
 
 		this.connect_webots(this.config.webots_port);
 	}
@@ -63,10 +65,8 @@ class SmarthomeWebots extends utils.Adapter {
 			// clearTimeout(timeout2);
 			// ...
 			// clearInterval(interval1);
-			
 			this.log.info("Unloading Adapter");
-			this.log.info("CLEANUP SH DEVICES")
-			this.deleteAllDevices();
+			
 
 			callback();
 		} catch (e) {
@@ -140,10 +140,8 @@ class SmarthomeWebots extends utils.Adapter {
 	// }
 
 	async deleteAllDevices(){
-		if (!this.config.cleanup_devices){
-			return;
-		}
-		this.log.info("Cleanup")
+	
+		this.log.info("delete all devices");
 			const objects = await this.getAdapterObjectsAsync(); // Alle folder, device, channel und state Objekte
 			
 			// Loop through all objects and devices and delete them
@@ -161,7 +159,7 @@ class SmarthomeWebots extends utils.Adapter {
 	}
 
 	connect_webots(port){
-		this.log.info("Starting webserver server on port: " + port);
+		this.log.info("Starting websocket server on port: " + port);
 
 		
 		var that = this;
@@ -169,7 +167,7 @@ class SmarthomeWebots extends utils.Adapter {
 
 		that.server.on('connection', function connection(ws) {
 			clearInterval(that.reconnectTimer);
-			that.log.info('Webserver Client Connected');
+			that.log.info('Device connected');
 			
 			ws.isAlive = true;
 			ws.on('pong', that.heartbeat);
