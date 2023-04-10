@@ -13,32 +13,51 @@
 
 ## smarthome_webots adapter for ioBroker
 
-An adapter to communicate with the Smarthome Webots Simulation
+ This adapter connects to the smart home simulation software based on webots found [here](https://github.com/goch/smarthome-webots)
 
-## Developer manual
-This section is intended for the developer. It can be deleted later
+It acts as a bridge between the two systems, enabling ioBroker to receive data from the simulation software and use it to control devices in the simulated smart home environment.
 
-### Getting started
+Once connected, the adapter can receive real-time data from the simulation software about the state of various devices in the simulated smart home environment, such as lights, sensors, and appliances. It then sends this data to ioBroker, which can use it to control real-world smart home devices connected to the ioBroker system.
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.smarthome_webots`
-1. Initialize the current folder as a new git repository:  
-	```bash
-	git init
-	git add .
-	git commit -m "Initial commit"
-	```
-1. Link your local repository with the one on GitHub:  
-	```bash
-	git remote add origin https://github.com/goch/ioBroker.smarthome_webots
-	```
+Users can test and experiment with smart home automation systems in a simulated environment before implementing them in their homes. This can save time and money by allowing users to identify potential problems and test different configurations without having to make physical changes to their homes.
 
-1. Push all files to the GitHub repo:  
-	```bash
-	git push origin master
-	```
 
-1. Head over to [main.js](main.js) and start programming!
+## Installation:
+
+
+1. Download and install ioBroker from their website https://www.iobroker.net/#de/download, then follow the setup wizard in your web browser. Confirm the default options.
+
+3. If the setup wizard doesn't start automatically, open a web browser and go to localhost:8081 to start the wizard.
+
+4. Once the wizard completes, cancel the automatic discovery and go to the Adapters section. Click on the human head icon on the top left and confirm the dialog box to toggle Expert Mode.
+
+5. Click on the new Github logo that appeared below and select the custom tab. Enter the following URL and click on the install button:
+
+```bash
+https://github.com/goch/ioBroker.smarthome_webots/archive/refs/tags/v0.0.2-beta.0.zip
+```
+
+
+5. A new Smarthome Webots panel will appear. Click on the three dots to show further info and then on the + symbol on the bottom left to add a new instance.
+
+6. In the instance settings window, configure the settings as required.
+
+6. Start Webots and open the home.wbt world in smarthome_webots/worlds folder.
+
+6. Start the simulation by pressing the play button at the top of Webots.
+
+6. Go to ioBroker and open the Objects tab. Open the smarthome_webots/0 folder. All devices in the simulation should now be visible in ioBroker.
+
+That's it! You have successfully installed the Smarthome Webots adapter for ioBroker and integrated it with your simulation.
+
+
+<!-- 
+
+#### install ioBroker:
+
+
+
+
 
 ### Best Practices
 We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
@@ -99,7 +118,7 @@ In order to install the adapter locally without publishing, the following steps 
 
 For later updates, the above procedure is not necessary. Just do the following:
 1. Overwrite the changed files in the adapter directory (`/opt/iobroker/node_modules/iobroker.smarthome_webots`)
-1. Execute `iobroker upload smarthome_webots` on the ioBroker host
+1. Execute `iobroker upload smarthome_webots` on the ioBroker host -->
 
 ## Changelog
 <!--
